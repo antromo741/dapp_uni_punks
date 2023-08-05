@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Container, Row, Col } from 'react-bootstrap'
-import Countdown from 'react-countdown';
+import Countdown from 'react-countdown'
 import { ethers } from 'ethers'
+
+// IMG
+import preview from '../preview.png';
 
 // Components
 import Navigation from './Navigation';
-import Loading from './Loading';
 import Data from './Data';
-
-import preview from '../preview.png'
+import Mint from './Mint';
+import Loading from './Loading';
 
 // ABIs: Import your contract ABIs here
 import NFT_ABI from '../abis/NFT.json'
@@ -23,13 +25,11 @@ function App() {
   const [account, setAccount] = useState(null)
 
   const [revealTime, setRevealTime] = useState(0)
-
   const [maxSupply, setMaxSupply] = useState(0)
-
   const [totalSupply, setTotalSupply] = useState(0)
-
   const [cost, setCost] = useState(0)
   const [balance, setBalance] = useState(0)
+
   const [isLoading, setIsLoading] = useState(true)
 
   const loadBlockchainData = async () => {
@@ -37,6 +37,7 @@ function App() {
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     setProvider(provider)
 
+    // Initiate contract
     const nft = new ethers.Contract(config[31337].nft.address, NFT_ABI, provider)
     setNFT(nft)
 
@@ -45,15 +46,20 @@ function App() {
     const account = ethers.utils.getAddress(accounts[0])
     setAccount(account)
 
+    // Fetch Countdown
     const allowMintingOn = await nft.allowMintingOn()
     setRevealTime(allowMintingOn.toString() + '000')
 
+    // Fetch maxSupply
     setMaxSupply(await nft.maxSupply())
 
+    // Fetch totalSupply
     setTotalSupply(await nft.totalSupply())
 
+    // Fetch cost
     setCost(await nft.cost())
 
+    // Fetch account balance
     setBalance(await nft.balanceOf(account))
 
     setIsLoading(false)
@@ -65,7 +71,8 @@ function App() {
     }
   }, [isLoading]);
 
-  return (
+
+  return(
     <Container>
       <Navigation account={account} />
 
@@ -77,16 +84,40 @@ function App() {
         <>
           <Row>
             <Col>
-              <img src={preview} alt="" />
+              {balance > 0 ? (
+                <div className='text-center'>
+                  <img
+                    src={`https://gateway.pinata.cloud/ipfs/QmQPEMsfd1tJnqYPbnTQCjoa8vczfsV1FmqZWgRdNQ7z3g/${balance.toString()}.png`}
+                    alt="Open Punk"
+                    width="400px"
+                    height="400px"
+                  />
+                </div>
+              ) : (
+                <img src={preview} alt="" />
+              )}
             </Col>
-            <Col>
-              <div className='my-4 text-center'></div>
-              <Countdown date={parseInt(revealTime)} className='h2' />
-              <Data maxSupply={maxSupply} totalSupply={totalSupply} cost={cost} balance={balance} />
-            </Col>
-            <Col>
 
+            <Col>
+              <div className='my-4 text-center'>
+                <Countdown date={parseInt(revealTime)} className='h2' />
+              </div>
+
+              <Data
+                maxSupply={maxSupply}
+                totalSupply={totalSupply}
+                cost={cost}
+                balance={balance}
+              />
+
+              <Mint
+                provider={provider}
+                nft={nft}
+                cost={cost}
+                setIsLoading={setIsLoading}
+              />
             </Col>
+
           </Row>
         </>
       )}
